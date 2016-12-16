@@ -44,9 +44,9 @@ public class AddPlantDialog extends DialogFragment {
   public AddPlantDialog(){}
 
 
-  public interface AddPlantDialogListener{
-    void onCancel();
-    void onSave(String plantName, String locationName);
+  public interface AddPlantDialogListener {
+    void onAddPlantCancel();
+    void onAddPlantSave(String plantName, String locationName);
   }
   private List<String> list = new ArrayList<>();
   @Override
@@ -72,7 +72,7 @@ public class AddPlantDialog extends DialogFragment {
     Button cancelBtn = (Button) view.findViewById(R.id.btnCancel);
     cancelBtn.setOnClickListener(new View.OnClickListener() {
       @Override public void onClick(View view) {
-        mCallback.onCancel();
+        mCallback.onAddPlantCancel();
       }
     });
 
@@ -80,7 +80,7 @@ public class AddPlantDialog extends DialogFragment {
     saveBtn.setOnClickListener(new View.OnClickListener() {
       @Override public void onClick(View view) {
         String locationName = locationText.getText() != null ? locationText.getText().toString():"";
-        mCallback.onSave(mSelectedPlant, locationName);
+        mCallback.onAddPlantSave(mSelectedPlant, locationName);
       }
     });
     return view;
@@ -88,6 +88,7 @@ public class AddPlantDialog extends DialogFragment {
   public void setPlantSpecies(List<String> species){
     list = species;
   }
+
   @Override
   public void onAttach(Context activity) {
     super.onAttach(activity);

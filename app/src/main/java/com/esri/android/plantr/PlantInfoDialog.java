@@ -1,6 +1,13 @@
 package com.esri.android.plantr;
 
+import android.content.Context;
+import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.TextView;
 
 /* Copyright 2016 Esri
  *
@@ -27,4 +34,56 @@ import android.support.v4.app.DialogFragment;
  */
 
 public class PlantInfoDialog extends DialogFragment {
+
+  public interface PlantInfoDialogListener {
+    void onPlantInfoCancel();
+    void onPlantInfoMeasure(String plantName, String locationName);
+  }
+  private PlantInfoDialogListener mCallback;
+  private TextView mPlantNameText;
+  private TextView mPlantLocation;
+  private TextView mPlantDescription;
+  private String mName="";
+  private String mLocation ="";
+  private String mDescription = "";
+  @Override
+  public final View onCreateView(final LayoutInflater inflater, final ViewGroup container,
+      final Bundle savedInstanceState) {
+
+    final View view = inflater.inflate(R.layout.plant_info, container,false);
+
+    Button btnCancel = (Button) view.findViewById(R.id.btnClosePlantInfo);
+    btnCancel.setOnClickListener(new View.OnClickListener() {
+      @Override public void onClick(View view) {
+        mCallback.onPlantInfoCancel();
+      }
+    });
+
+    mPlantDescription = (TextView) view.findViewById(R.id.txtPlantInfo);
+    mPlantNameText = (TextView) view.findViewById(R.id.txtPlantName);
+    mPlantLocation = (TextView) view.findViewById(R.id.txtLocationName);
+    mPlantDescription.setText(mDescription);
+    mPlantNameText.setText(mName);
+    mPlantLocation.setText(mLocation);
+    return view;
+
+  }
+  @Override
+  public void onAttach(Context activity) {
+    super.onAttach(activity);
+
+    // This makes sure that the container activity has implemented
+    // the callback interface. If not, it throws an exception
+    try {
+      mCallback = (PlantInfoDialog.PlantInfoDialogListener) activity;
+    } catch (ClassCastException e) {
+      throw new ClassCastException(activity.toString()
+          + " must implement PlantInfoDialogListener");
+    }
+  }
+  public void showData(String plantName, String description, String locationName){
+    mName = plantName;
+    mDescription = description;
+    mLocation = locationName;
+  }
 }

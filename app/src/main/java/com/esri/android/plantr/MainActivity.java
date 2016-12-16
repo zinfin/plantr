@@ -1,7 +1,6 @@
 package com.esri.android.plantr;
 
 import android.Manifest;
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -18,10 +17,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
 import com.esri.arcgisruntime.concurrent.ListenableFuture;
-import com.esri.arcgisruntime.data.Feature;
-import com.esri.arcgisruntime.data.FeatureQueryResult;
-import com.esri.arcgisruntime.data.QueryParameters;
-import com.esri.arcgisruntime.data.ServiceFeatureTable;
+import com.esri.arcgisruntime.data.*;
 import com.esri.arcgisruntime.geometry.*;
 import com.esri.arcgisruntime.layers.FeatureLayer;
 import com.esri.arcgisruntime.layers.Layer;
@@ -29,6 +25,7 @@ import com.esri.arcgisruntime.loadable.LoadStatusChangedEvent;
 import com.esri.arcgisruntime.loadable.LoadStatusChangedListener;
 import com.esri.arcgisruntime.location.LocationDataSource;
 import com.esri.arcgisruntime.mapping.ArcGISMap;
+import com.esri.arcgisruntime.mapping.GeoElement;
 import com.esri.arcgisruntime.mapping.LayerList;
 import com.esri.arcgisruntime.mapping.Viewpoint;
 import com.esri.arcgisruntime.mapping.view.*;
@@ -37,7 +34,8 @@ import com.esri.arcgisruntime.portal.PortalItem;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-public class MainActivity extends AppCompatActivity implements AddPlantDialog.AddPlantDialogListener {
+public class MainActivity extends AppCompatActivity
+    implements AddPlantDialog.AddPlantDialogListener, PlantInfoDialog.PlantInfoDialogListener {
 
   private static final String TAG = "IndoorAtlasExample";
 
@@ -47,6 +45,7 @@ public class MainActivity extends AppCompatActivity implements AddPlantDialog.Ad
   private ServiceFeatureTable mReadingsTable = null;
   private ServiceFeatureTable mPlantFeatureTable = null;
   private AddPlantDialog mAddPlantDialog = null;
+  private PlantInfoDialog mPlantInfoDialog = null;
   private FeatureLayer mPlantFeatureLayer;
   private Point mPlantLocation = null;
   private ProgressDialog mProgressDialog = null;
@@ -112,7 +111,6 @@ public class MainActivity extends AppCompatActivity implements AddPlantDialog.Ad
         Iterator<Layer> iter = layerList.iterator();
         while (iter.hasNext()){
           mPlantFeatureLayer = (FeatureLayer) iter.next();
-
           mPlantFeatureTable = (ServiceFeatureTable) mPlantFeatureLayer.getFeatureTable();
 
           Log.i(TAG, mPlantFeatureLayer.getName());
@@ -253,11 +251,11 @@ public class MainActivity extends AppCompatActivity implements AddPlantDialog.Ad
 
   }
 
-  @Override public void onCancel() {
+  @Override public void onAddPlantCancel() {
     mAddPlantDialog.dismiss();
   }
 
-  @Override public void onSave(String plantName, String locationName) {
+  @Override public void onAddPlantSave(String plantName, String locationName) {
     mAddPlantDialog.dismiss();
     saveNewFeature(plantName, locationName);
   }
@@ -298,6 +296,15 @@ public class MainActivity extends AppCompatActivity implements AddPlantDialog.Ad
     }
   }
 
+  @Override public void onPlantInfoCancel() {
+    mPlantInfoDialog.dismiss();
+  }
+
+  @Override public void onPlantInfoMeasure(String plantName, String locationName) {
+    mPlantInfoDialog.dismiss();
+    // Show plant measure dialog
+  }
+
   private class MapTouchListener extends DefaultMapViewOnTouchListener {
     /**
      * Instantiates a new DrawingMapViewOnTouchListener with the specified
@@ -318,37 +325,37 @@ public class MainActivity extends AppCompatActivity implements AddPlantDialog.Ad
 
       // Assign the current clicked location
       final Point point = mMapView.screenToLocation(screenPoint);
+      // identify the GeoElements in the given layer
+      final ListenableFuture<IdentifyLayerResult> identifyFuture = mMapView.identifyLayerAsync(mPlantFeatureLayer, screenPoint, 5, false, 1);
+
+      // add done loading listener to fire when the selection returns
+      identifyFuture.addDoneListener(new Runnable() {
+        @Override
+        public void run() {
+          try {
+            // call get on the future to get the result
+            IdentifyLayerResult layerResult = identifyFuture.get();
+            List<GeoElement> resultGeoElements = layerResult.getElements();
+
+            if (resultGeoElements.size() >0) {
+              if (resultGeoElements.get(0) instanceof ArcGISFeature) {
+                ArcGISFeature selectedArcGISFeature = (ArcGISFeature) resultGeoElements.get(0);
+                // highlight the selected feature
+                mPlantFeatureLayer.selectFeature(selectedArcGISFeature);
+                showPlantInfo(selectedArcGISFeature);
+                Log.i(TAG, "Feature found");
+              }
+            }else{
+              showAddPlantDialog();
+            }
+          } catch (Exception e) {
+            Log.e(getResources().getString(R.string.app_name), "Select feature failed: " + e.getMessage());
+          }
+        }
+      });
       Log.i(TAG, "Screen to location " + point.getX() + ", " + point.getY());
-      mPlantLocation = (Point) GeometryEngine.project(point, SpatialReference.create(3857));
+      mPlantLocation = new Point(point.getX(), point.getY(), SpatialReference.create(3857));
       Log.i(TAG, "WGS 84 location" + mPlantLocation.getX() + ", " + mPlantLocation.getY());
-      selectFeature(mPlantLocation);
-//      final ListenableFuture<IdentifyGraphicsOverlayResult> identifyGraphic = mMapView
-//          .identifyGraphicsOverlayAsync(mGraphicOverlay, screenPoint, 10, false);
-//
-//      identifyGraphic.addDoneListener(new Runnable() {
-//        @Override
-//        public void run() {
-//          try {
-//            // get the list of graphics returned by identify
-//            final IdentifyGraphicsOverlayResult graphic = identifyGraphic.get();
-//
-//            // get size of list in results
-//            final int identifyResultSize = graphic.getGraphics().size();
-//            if (identifyResultSize > 0){
-//              final Graphic foundGraphic = graphic.getGraphics().get(0);
-//
-//            }else{
-//
-//
-//              // Show a dialog for adding plant info
-//              showAddPlantDialog();
-//            }
-//          } catch (InterruptedException | ExecutionException ie) {
-//            Log.e(TAG, ie.getMessage());
-//          }
-//        }
-//
-//      });
       return true;
     }
   }
@@ -452,35 +459,25 @@ public class MainActivity extends AppCompatActivity implements AddPlantDialog.Ad
     mAddPlantDialog.setPlantSpecies(plantTypes);
 
   }
-  private void selectFeature(Point point) {
+  private void showPlantInfo(ArcGISFeature feature) {
+    mPlantInfoDialog  = new PlantInfoDialog();
+    FragmentManager fm = getSupportFragmentManager();
+    mPlantInfoDialog.show(fm, "plant_info_dialog");
 
-    //create a buffer from the point
-    Polygon searchGeometry = GeometryEngine.buffer(point, 5);
+    // Get the data relevant to the feature
+    Map<String,Object> info = feature.getAttributes();
+    Log.i(TAG, info.keySet().toString());
+    String locationDescription = info.get("LOCATION_DESCRIPTION").toString();
+    String plantName = info.get("PLANT_NAME").toString();
+    String description = "";
+    // Get details about specific species
+    if (mPlantSpeciesTable.containsKey(plantName)){
+      PlantSpecies species = mPlantSpeciesTable.get(plantName);
+      description = species.getPlantDescription();
+      Log.i(TAG, "Plant species info " +  description);
+    }
+    mPlantInfoDialog.showData(plantName, locationDescription, description);
 
-    //create a query
-    final QueryParameters queryParams = new QueryParameters();
-    queryParams.setGeometry(searchGeometry);
-    queryParams.setSpatialRelationship(QueryParameters.SpatialRelationship.WITHIN);
-
-    //select based on the query
-    final ListenableFuture<FeatureQueryResult> result = mPlantFeatureLayer.selectFeaturesAsync(queryParams, FeatureLayer.SelectionMode.NEW);
-    result.addDoneListener(new Runnable() {
-      @Override public void run() {
-        try {
-          FeatureQueryResult queryResult =result.get();
-          Iterator<Feature> features = queryResult.iterator();
-          if (features.hasNext()){
-
-          }else{
-            showAddPlantDialog();
-          }
-        } catch (InterruptedException e) {
-          e.printStackTrace();
-        } catch (ExecutionException e) {
-          e.printStackTrace();
-        }
-      }
-    });
   }
 }
 
