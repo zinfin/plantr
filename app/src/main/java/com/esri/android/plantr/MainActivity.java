@@ -112,6 +112,7 @@ public class MainActivity extends AppCompatActivity implements AddPlantDialog.Ad
         Iterator<Layer> iter = layerList.iterator();
         while (iter.hasNext()){
           mPlantFeatureLayer = (FeatureLayer) iter.next();
+
           mPlantFeatureTable = (ServiceFeatureTable) mPlantFeatureLayer.getFeatureTable();
 
           Log.i(TAG, mPlantFeatureLayer.getName());
