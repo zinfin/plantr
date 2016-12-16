@@ -300,7 +300,7 @@ public class MainActivity extends AppCompatActivity
     mPlantInfoDialog.dismiss();
   }
 
-  @Override public void onPlantInfoMeasure(String plantName, String locationName) {
+  @Override public void onPlantInfoMeasure(Plant plant) {
     mPlantInfoDialog.dismiss();
     // Show plant measure dialog
   }
@@ -467,6 +467,7 @@ public class MainActivity extends AppCompatActivity
     // Get the data relevant to the feature
     Map<String,Object> info = feature.getAttributes();
     Log.i(TAG, info.keySet().toString());
+    String id = info.get("OBJECTID").toString();
     String locationDescription = info.get("LOCATION_DESCRIPTION").toString();
     String plantName = info.get("PLANT_NAME").toString();
     String description = "";
@@ -476,7 +477,8 @@ public class MainActivity extends AppCompatActivity
       description = species.getPlantDescription();
       Log.i(TAG, "Plant species info " +  description);
     }
-    mPlantInfoDialog.showData(plantName, locationDescription, description);
+    Plant plant = new Plant(Integer.parseInt(id),plantName,locationDescription,  description);
+    mPlantInfoDialog.showData(plant);
 
   }
 }

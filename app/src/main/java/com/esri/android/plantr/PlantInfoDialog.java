@@ -37,7 +37,7 @@ public class PlantInfoDialog extends DialogFragment {
 
   public interface PlantInfoDialogListener {
     void onPlantInfoCancel();
-    void onPlantInfoMeasure(String plantName, String locationName);
+    void onPlantInfoMeasure(Plant plant);
   }
   private PlantInfoDialogListener mCallback;
   private TextView mPlantNameText;
@@ -46,6 +46,7 @@ public class PlantInfoDialog extends DialogFragment {
   private String mName="";
   private String mLocation ="";
   private String mDescription = "";
+  private Plant mPlant;
   @Override
   public final View onCreateView(final LayoutInflater inflater, final ViewGroup container,
       final Bundle savedInstanceState) {
@@ -56,6 +57,13 @@ public class PlantInfoDialog extends DialogFragment {
     btnCancel.setOnClickListener(new View.OnClickListener() {
       @Override public void onClick(View view) {
         mCallback.onPlantInfoCancel();
+      }
+    });
+
+    Button btnReading = (Button) view.findViewById(R.id.btnAddReading);
+    btnReading.setOnClickListener(new View.OnClickListener() {
+      @Override public void onClick(View view) {
+        mCallback.onPlantInfoMeasure(mPlant);
       }
     });
 
@@ -81,9 +89,10 @@ public class PlantInfoDialog extends DialogFragment {
           + " must implement PlantInfoDialogListener");
     }
   }
-  public void showData(String plantName, String description, String locationName){
-    mName = plantName;
-    mDescription = description;
-    mLocation = locationName;
+  public void showData(Plant plant){
+    mPlant = plant;
+    mName = plant.getName();
+    mDescription = plant.getDescription();
+    mLocation = plant.getLocationName();
   }
 }
